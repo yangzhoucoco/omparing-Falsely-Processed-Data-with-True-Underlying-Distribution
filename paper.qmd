@@ -1,0 +1,101 @@
+---
+title: "Comparing Falsely Processed Data with True Underlying Distribution"
+author: 
+  - Yang Zhou
+thanks: "Code and data are available at: https://github.com/yangzhoucoco/omparing-Falsely-Processed-Data-with-True-Underlying-Distribution"
+date: today
+date-format: long
+format: pdf
+toc: true
+number-sections: true
+bibliography: references.bib
+---
+
+```{r setup}
+#| echo: false
+#| warning: false
+#| message: false
+library(ggplot2)
+```
+
+# Introduction
+
+In this study, we investigate the implications of data manipulation errors on statistical analysis outcomes. We simulate a scenario where the data generation process is assumed to follow a Normal distribution with a mean of one and a standard deviation of one, generating a sample of 1,000 observations. This simulation incorporates three specific data manipulation errors: overwriting of observations due to instrument memory limitations, accidental sign changes of negative values, and decimal place errors. Our goal is to assess the impact of these errors on the mean estimation and to explore methodologies that could detect such discrepancies in real-world data analysis scenarios.
+
+# Data Simulation
+
+The data was generated and manipulated using R programming [@citeR], and using ggplot2 [@ggplot2] for visualization. The simulation process involved the following steps:
+
+1. Initial Sample Generation: A sample of 900 observations was drawn from a Normal distribution with a mean of 1 and a standard deviation of 1.
+
+2. Observation Overwriting: Due to instrument memory limitations, the final 100 observations were a duplication of the first 100, simulating an error in the data recording process.
+
+3. Sign Correction Error: Half of the negative values in the sample were mistakenly converted to positive values, introducing a bias.
+
+4. Decimal Place Error: Values between 1 and 1.1 had their decimal places inaccurately shifted, altering their magnitude erroneously.
+
+```{r}
+#| label: fig-density
+#| fig-cap: Density graphs of simulated data and true distribution
+#| echo: false
+#| warning: false
+#| message: false
+#| out.width: "90%"  # Adjust to fit the page
+#| out.height: "90%"  # Adjust to fit the page
+set.seed(0)
+sample <- rnorm(900, mean = 1, sd = 1)
+
+# 1. "final 100 observations are actually a repeat of the first 100"
+sample <- c(sample, sample[1:100])
+
+# 2. half negative to positive
+negative_indices <- which(sample < 0)
+negatives_to_convert <- length(negative_indices) / 2
+sample[negative_indices[1:negatives_to_convert]] <- 
+  -sample[negative_indices[1:negatives_to_convert]]
+
+# 3. change decimals between 1 and 1.1
+sample[sample >= 1 & sample <= 1.1] <- sample[sample >= 1 & sample <= 1.1] * 0.1
+
+# 4. visualize and analyse
+
+# Load the ggplot2 package
+library(ggplot2)
+
+underlying <- rnorm(1000, mean = 1, sd = 1)
+
+# Combine the samples into a single data frame
+combined_sample <- data.frame(
+  value = c(underlying, sample),
+  group = factor(c(rep("Underlying", 1000), 
+                   rep("Sample", 1000)))
+)
+
+# Plot the densities
+ggplot(combined_sample, aes(x = value, fill = group)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Combined Density Plot", x = "Value", y = "Density") +
+  scale_fill_manual(values = c("Underlying" = "blue", "Sample" = "red")) +
+  theme_minimal()
+
+```
+
+
+
+
+
+# Results
+
+The density plots @fig-density revealed significant deviations between the manipulated sample and the underlying true distribution. The manipulations introduced a visible bias towards positive values and altered the shape of the distribution, particularly around the mean and the left tails.
+
+
+# Mitigation Strategies
+To prevent such errors from compromising real-world data analysis, several steps can be recommended:
+
+1. Data Integrity Checks: Implementing checks to verify the integrity of the data, including maximum memory checks and validation of value ranges.
+
+2. Frequent Communication with Data Handlers: Ensuring clear communication channels with individuals involved in data collection and processing to quickly identify any unintended manipulations.
+
+
+
+# References
